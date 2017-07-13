@@ -5,43 +5,54 @@ namespace ConcurrentStackTest
 {
     public static class DataStream
     {
-        private static ConcurrentDictionary<Guid, EventStreamer> streamManager = new ConcurrentDictionary<Guid, EventStreamer>();
+        private static readonly ConcurrentDictionary<Guid, EventStreamer> StreamManager = new ConcurrentDictionary<Guid, EventStreamer>();
 
-        public static Guid StartStream<T>(T objectToCapture)
-        {
-            var streamItem = new BeginEventStream<T>(objectToCapture);
-
-            var stream = new EventStreamer();
-            var id = stream.BeginFor(streamItem);
-
-            streamManager.TryAdd(id, stream);
-
-            return id;
-        }
+//        public static Guid StartStream<T>(T objectToCapture)
+//        {
+//            var streamItem = new BeginEventStream<T>(objectToCapture);
+//
+//            var stream = new EventStreamer();
+//            var id = stream.BeginFor(streamItem);
+//
+//            streamManager.TryAdd(id, stream);
+//
+//            return id;
+//        }
 
         public static void Append<T>(Guid id, T objectToCapture)
         {
-            if (streamManager.ContainsKey(id))
+
+            if(!StreamManager.ContainsKey(id))
             {
-                var item = new EventItem<T>(streamManager[id].NextId())
+                var streamItem = new BeginEventStream<T>(objectToCapture)
+                {
+                    Id = id
+                };
+
+                var stream = new EventStreamer();
+
+                stream.BeginFor(streamItem);
+                StreamManager.TryAdd(id, stream);
+
+                return;
+            }
+            
+
+                var item = new EventItem<T>(StreamManager[id].NextId())
                 {
                     Id = id,
                     Data = objectToCapture
                 };
 
-                streamManager[id].Append(item);
-            }
-            else
-            {
-                throw new Exception("a stream does not exist for this id");
-            }
+                StreamManager[id].Append(item);
+
         }
 
         public static void Persist(Guid id)
         {
-            if (streamManager.ContainsKey(id))
+            if (StreamManager.ContainsKey(id))
             {
-                streamManager[id].Persist(x => Console.WriteLine(x.Data.Name));
+                StreamManager[id].Persist(x => Console.WriteLine(x.Data.Name));
             }
         }
     }

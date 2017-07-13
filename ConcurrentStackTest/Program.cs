@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using FizzWare.NBuilder;
 
 namespace ConcurrentStackTest
@@ -8,24 +9,30 @@ namespace ConcurrentStackTest
     {
         private static void Main(string[] args)
         {
-            IEnumerable<WrapperTest> wrappers = Builder<WrapperTest>.CreateListOfSize(10).Build();
+            var wrappers = Builder<WrapperTest>.CreateListOfSize(10).Build().ToArray();
 
-            var isFirst = true;
-            var Id = Guid.Empty;
-            foreach (var test in wrappers)
+            var evens = Guid.NewGuid();
+            var odds = Guid.NewGuid();
+
+
+
+            for (int i = 1; i < 11; i++)
             {
-                if (isFirst)
+
+                if (i % 2 == 0)
                 {
-                    Id = DataStream.StartStream(test);
-                    isFirst = false;
+                    DataStream.Append(evens, wrappers[i-1]);
                 }
                 else
                 {
-                    DataStream.Append(Id, test);
+                    DataStream.Append(odds, wrappers[i-1]);
                 }
             }
 
-            DataStream.Persist(Id);
+            Console.WriteLine("now do even");
+            DataStream.Persist(evens);
+            Console.WriteLine("now do odd");
+            DataStream.Persist(odds);
 
             Console.Read();
         }
